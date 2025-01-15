@@ -1,71 +1,64 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Button, StyleSheet } from "react-native";
+import { View, Text, Button, StyleSheet, TextInput, Alert } from "react-native";
+import * as Notifications from "expo-notifications";
+import {Audio} from "expo-av";
 
 const EyeCareApp = () => {
-  const [timer, setTimer] = useState(0); // Timer state
-  const [isRunning, setIsRunning] = useState(false); // State to track if the timer is running
+  const [intervalMinutes, setIntervalMinutes ] = useState(20);
+  const [timer, setTimer] = useState(0); 
+  const [isRunning, setIsRunning] = useState(false);
+  const [sound, setSound] = useState(null);
+  
+  
 
   useEffect(() => {
     let interval = null;
 
-    if (isRunning && timer > 0) {
+    if (isRunning){
+      setTimer(intervalMinutes * 60);
       interval = setInterval(() => {
-        setTimer((prevTime) => prevTime - 1);
-      }, 1000); // Decrease the timer by 1 every second
-    } else if (timer === 0 && isRunning) {
-      // When timer reaches 0
-      clearInterval(interval);
-      alert("Time's up! Look 20 feet away for 20 seconds."); // Reminder alert
-      setIsRunning(false);
+        setTimer((prev) => {
+          if(prev <=1){
+            sendReminder();
+            return intervalMinutes * 60;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
 
-    return () => clearInterval(interval); // Cleanup interval on unmount or timer stop
-  }, [timer, isRunning]);
+    return () => clearInterval(interval);
+  }, [isRunning, intervalMinutes]);
 
-  const startTimer = () => {
-    setTimer(20); // Set timer to 20 seconds
-    setIsRunning(true); // Start the timer
+  const sendReminder = async () => {
+    Alert.alert(
+      "20-20 Eye Care Reminder ",
+      `Take a break! Look at something 20 feet away for 20 seconds.`
+    );
+
+    playSound();
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "20-20 Eye Care Reminder ",
+        body:  "Take a break! Look at something 20 feet away for 20 seconds.",
+        sound: true,
+      }, 
+      trigger: null,
+    });
+
+
+
   };
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>20-20 Eye Care Reminder</Text>
+  const playSound = async () => {
+    const {sound} = await Audio.Sound.createAsync(
+      require("./assets/notification.mp3")
+    );
+    setSound(sound);
+    await sound.playAsync();
+  }
 
-      {isRunning ? (
-        <Text style={styles.timer}>Time Remaining: {timer} seconds</Text>
-      ) : (
-        <Text style={styles.instructions}>
-          Press "Start Reminder" to begin a 20-second timer.
-        </Text>
-      )}
 
-      <Button title="Start Reminder" onPress={startTimer} disabled={isRunning} />
-    </View>
-  );
-};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-  timer: {
-    fontSize: 20,
-    color: "red",
-    marginVertical: 20,
-  },
-  instructions: {
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 20,
-  },
-});
-
-export default EyeCareApp;
+  
