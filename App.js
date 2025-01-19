@@ -53,7 +53,7 @@ const EyeCareApp = () => {
 
   const playSound = async () => {
     const {sound} = await Audio.Sound.createAsync(
-      require("./assets/notification.mp3")
+      require("./assets/notification.m4a")
     );
     setSound(sound);
     await sound.playAsync();
